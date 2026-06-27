@@ -76,7 +76,7 @@ function parse(raw) {
 }
 
 // A cheap hash of all ticket files' size+mtime, for the auto-reload poll.
-function contentHash() {
+export function contentHash() {
   let h = 0;
   for (const { dir } of COLUMNS) {
     let files = [];
@@ -224,12 +224,14 @@ function row(t) {
     </details>`;
 }
 
-function page() {
-  const cols = COLUMNS.map((c) => {
-    const tickets = readColumn(c.dir);
-    return { ...c, tickets };
-  });
+export function boardData() {
+  const cols = COLUMNS.map((c) => ({ ...c, tickets: readColumn(c.dir) }));
   const total = cols.reduce((n, c) => n + c.tickets.length, 0);
+  return { cols, total };
+}
+
+export function pageHtml({ afterHeader = "", beforeBodyEnd = "" } = {}) {
+  const { cols, total } = boardData();
   const columnsHtml = cols
     .map(
       (c) => `
@@ -418,6 +420,7 @@ function page() {
     </div>
     <span class="sub" id="live">live</span>
   </header>
+  ${afterHeader}
   <div class="board">${columnsHtml}</div>
   <div class="list">${groupsHtml}</div>
   <script>
@@ -449,35 +452,38 @@ function page() {
     poll();
     setInterval(poll, 3000);
   </script>
+  ${beforeBodyEnd}
 </body>
 </html>`;
 }
 
-// ---- server -------------------------------------------------------------
+// ---- server (standalone only) -------------------------------------------
 
-createServer((req, res) => {
-  if (req.url === "/api/hash") {
-    res.writeHead(200, { "content-type": "text/plain" });
-    res.end(contentHash());
-    return;
-  }
-  if (req.url === "/" || req.url === "") {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    res.end(page());
-    return;
-  }
-  res.writeHead(404, { "content-type": "text/plain" });
-  res.end("not found");
-}).listen(PORT, () => {
-  console.log(`${cfg.boardTitle} board → http://localhost:${PORT}`);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  createServer((req, res) => {
+    if (req.url === "/api/hash") {
+      res.writeHead(200, { "content-type": "text/plain" });
+      res.end(contentHash());
+      return;
+    }
+    if (req.url === "/" || req.url === "") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(pageHtml());
+      return;
+    }
+    res.writeHead(404, { "content-type": "text/plain" });
+    res.end("not found");
+  }).listen(PORT, () => {
+    console.log(`${cfg.boardTitle} board → http://localhost:${PORT}`);
+  });
 
-// Auto-reconcile timer — only runs in mirror mode (codeRepoPath configured and
-// reconcile loop enabled). In standalone mode the board is a pure viewer.
-if (cfg.codeRepoPath && cfg.loops.reconcile.enabled) {
-  import("./reconcile.mjs").then(({ reconcile }) => {
-    const tick = () => { try { reconcile({ fetch: true, commit: true, push: true }); } catch {} };
-    tick();
-    setInterval(tick, cfg.loops.reconcile.intervalSec * 1000);
-  }).catch((err) => console.error("reconcile import failed:", err));
+  // Auto-reconcile timer — only runs in mirror mode (codeRepoPath configured and
+  // reconcile loop enabled). In standalone mode the board is a pure viewer.
+  if (cfg.codeRepoPath && cfg.loops.reconcile.enabled) {
+    import("./reconcile.mjs").then(({ reconcile }) => {
+      const tick = () => { try { reconcile({ fetch: true, commit: true, push: true }); } catch {} };
+      tick();
+      setInterval(tick, cfg.loops.reconcile.intervalSec * 1000);
+    }).catch((err) => console.error("reconcile import failed:", err));
+  }
 }
