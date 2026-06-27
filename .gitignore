@@ -1,0 +1,12 @@
+# Editor / OS noise
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Blaze runtime state (Plan 2)
+.blaze/

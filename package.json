@@ -1,0 +1,14 @@
+{
+  "name": "blaze-board",
+  "version": "0.1.0",
+  "description": "A file-based, git-native issue board that AI coding agents can drive. Tickets are markdown; status is the directory.",
+  "type": "module",
+  "scripts": {
+    "board": "node scripts/serve.mjs",
+    "new": "bash scripts/new-ticket.sh",
+    "reconcile": "node scripts/reconcile.mjs",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=16" },
+  "license": "MIT"
+}
