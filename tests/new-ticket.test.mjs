@@ -43,3 +43,15 @@ test("next id is max+1 across all columns, honouring a custom key", () => {
   assert.match(body, /^priority: high$/m);
   rmSync(dir, { recursive: true, force: true });
 });
+
+test("escapes sed-special characters in the title (no injection, no corruption)", () => {
+  const dir = makeBoard("TASK");
+  // '|' is the sed delimiter and '&' is the whole-match backreference — both must be
+  // escaped or the frontmatter is corrupted (or sed fails under `set -e`).
+  execFileSync("bash", ["scripts/new-ticket.sh", "Add CSV | Excel export & more"], { cwd: dir });
+  const files = readdirSync(join(dir, "backlog")).filter((f) => f.endsWith(".md"));
+  assert.equal(files.length, 1);
+  const body = readFileSync(join(dir, "backlog", files[0]), "utf8");
+  assert.match(body, /^title: Add CSV \| Excel export & more$/m);
+  rmSync(dir, { recursive: true, force: true });
+});
