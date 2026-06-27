@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -65,4 +65,46 @@ test("buildPrompt names the target file, the rules, and the labels", () => {
 test("parseChangedFiles + commitMessage", () => {
   assert.deepEqual(parseChangedFiles("backlog/a.md\n\nbacklog/b.md\n"), ["backlog/a.md", "backlog/b.md"]);
   assert.equal(commitMessage("TASK-7", ["backlog/a.md"]), "chore(groom): TASK-7 1 file(s) groomed");
+});
+
+import { execFileSync } from "node:child_process";
+import { chmodSync } from "node:fs";
+
+function gitBoard() {
+  const dir = mkdtempSync(join(tmpdir(), "blaze-groom-e2e-"));
+  mkdirSync(join(dir, "backlog"), { recursive: true });
+  // A stub "agent": reads BLAZE_GROOM_TARGET, flips empty labels to [backend].
+  const stub = join(dir, "stub-agent.sh");
+  writeFileSync(stub, '#!/usr/bin/env bash\nsed -i -E "s/^labels: \\[\\]/labels: [backend]/" "$BLAZE_GROOM_TARGET"\n');
+  chmodSync(stub, 0o755);
+  writeFileSync(join(dir, "blaze.config.json"), JSON.stringify({
+    key: "TASK",
+    agentCommand: `bash ${stub}`,
+    loops: { groomer: { columns: ["backlog"] } },
+  }));
+  writeFileSync(join(dir, "backlog", "TASK-001-x.md"),
+    "---\nid: TASK-001\ntitle: x\ntype: feature\npriority: medium\nlabels: []\n---\nbody\n");
+  execFileSync("git", ["-C", dir, "init", "-q"]);
+  execFileSync("git", ["-C", dir, "config", "user.email", "t@t"]);
+  execFileSync("git", ["-C", dir, "config", "user.name", "t"]);
+  execFileSync("git", ["-C", dir, "add", "-A"]);
+  execFileSync("git", ["-C", dir, "commit", "-q", "-m", "seed"]);
+  return dir;
+}
+
+test("groomOnce drives the stub agent and auto-commits one chore(groom) change", async () => {
+  const { groomOnce } = await import("../scripts/loops/groomer.mjs");
+  const dir = gitBoard();
+  const cfg = loadConfig({ root: dir, env: {} });
+  const evt = groomOnce({ root: dir, cfg, agentsMd: "## Grooming rules\n- add labels\n", today: "2026-06-27" });
+  assert.equal(evt.type, "groom");
+  assert.equal(evt.id, "TASK-001");
+  assert.ok(evt.sha, "expected a commit sha");
+  const log = execFileSync("git", ["-C", dir, "log", "--oneline"], { encoding: "utf8" });
+  assert.match(log, /chore\(groom\): TASK-001/);
+  const body = readFileSync(join(dir, "backlog", "TASK-001-x.md"), "utf8");
+  assert.match(body, /labels: \[backend\]/);
+  // Idempotent: the same ticket is now recorded as groomed.
+  assert.equal(groomOnce({ root: dir, cfg, agentsMd: "## Grooming rules\n", today: "2026-06-27" }), null);
+  rmSync(dir, { recursive: true, force: true });
 });
