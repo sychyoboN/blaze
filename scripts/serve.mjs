@@ -473,7 +473,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     }
     res.writeHead(404, { "content-type": "text/plain" });
     res.end("not found");
-  }).listen(PORT, () => {
+  }).listen(PORT, "127.0.0.1", () => {
     console.log(`${cfg.boardTitle} board → http://localhost:${PORT}`);
   });
 

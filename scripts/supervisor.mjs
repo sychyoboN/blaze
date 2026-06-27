@@ -184,7 +184,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const cfg = loadConfig();
   const app = createApp(cfg);
   const port = Number(process.env.PORT) || cfg.port;
-  app.server.listen(port, () => {
+  app.server.listen(port, "127.0.0.1", () => {
     console.log(`${cfg.boardTitle} app → http://localhost:${port}`);
     if (cfg.loops.reconcile.enabled && cfg.codeRepoPath) app.startLoop("reconcile");
     if (cfg.loops.groomer.enabled) app.startLoop("groomer");
