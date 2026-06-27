@@ -755,7 +755,23 @@ Then apply these substitutions (line numbers approximate — match on the litera
 - `<title>carelia-tracker</title>` → `` <title>${cfg.boardTitle}</title> `` (ensure the template literal is in a JS string that interpolates; if the HTML is a plain string, build it with `cfg.boardTitle`).
 - `<h1>carelia-tracker</h1>` → `` <h1>${cfg.boardTitle}</h1> ``.
 - The console banner `carelia-tracker board → http://localhost:${PORT}` → `` ${cfg.boardTitle} board → http://localhost:${PORT} ``.
-- The column list that builds `columnsHtml` (the array the board iterates) → source it from `cfg.columns` instead of any hardcoded array.
+- `const PORT = Number(process.env.PORT) || 4321;` → `const PORT = Number(process.env.PORT) || cfg.port;`.
+- Replace the hardcoded `COLUMNS` array with one derived from config (dir + Title-Cased label):
+
+```javascript
+const COLUMNS = cfg.columns.map((dir) => ({
+  dir,
+  label: dir.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+}));
+```
+
+- In `page()`, replace the hardcoded `LIST_ORDER` array with a config-aware ordering (preferred-first, then any extra columns), intersected with the configured columns:
+
+```javascript
+const PREFERRED = ["in-review", "in-progress", "todo", "backlog", "done", "canceled", "duplicate"];
+const LIST_ORDER = [...PREFERRED.filter((d) => cfg.columns.includes(d)),
+                    ...cfg.columns.filter((d) => !PREFERRED.includes(d))];
+```
 
 - [ ] **Step 2: Decouple the auto-reconcile timer (defer the loop to Plan 2)**
 
@@ -774,30 +790,57 @@ if (cfg.codeRepoPath && cfg.loops.reconcile.enabled) {
 
 - [ ] **Step 3: Apply the brand palette to the inline CSS**
 
-In the `<style>` block, add the brand tokens at the top of `:root` and set the base surface colours:
+The board is dark-themed; keep it dark and rebrand to the Blaze **dark** surface
+(Deep Charcoal) — this matches the brand's dark-background lockup and avoids a risky
+light-theme rewrite. In the `<style>` block, add brand tokens to `:root` and swap the
+base surface colours:
 
 ```css
 :root {
+  color-scheme: dark;
   --blaze-red: #FF3B1F;
   --blaze-orange: #FF7A00;
   --blaze-amber: #FFC107;
   --charcoal: #0F172A;
   --neutral: #F6F7F9;
 }
-body { background: var(--neutral); color: var(--charcoal); }
-h1 { color: var(--charcoal); }
 ```
 
-Then find the existing priority-colour rules (cards are already colour-coded by priority) and set them to the brand heat ramp. The card priority is exposed via a `data-priority` attribute (the source sets a priority class/attribute per card — match whichever it uses):
+Replace the `body` background/colour (currently `background:#0e1117; color:#e6edf3`):
 
 ```css
-.card[data-priority="urgent"] { border-left: 4px solid var(--blaze-red); }
-.card[data-priority="high"]   { border-left: 4px solid var(--blaze-orange); }
-.card[data-priority="medium"] { border-left: 4px solid var(--blaze-amber); }
-.card[data-priority="low"], .card[data-priority="none"] { border-left: 4px solid var(--charcoal); opacity: .9; }
+body { margin: 0; font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+       background: var(--charcoal); color: var(--neutral); }
 ```
 
-> If the source colour-codes priority via a CSS class (e.g. `.priority-urgent`) rather than a `data-priority` attribute, apply the same three brand colours to those existing selectors instead of adding new ones — do not introduce a second styling mechanism.
+The source colour-codes priority via CSS **classes** (`.card.prio-*`, `.prio.prio-*`,
+`.row.prio-*`) — there is no `data-priority` attribute. Replace the existing
+priority-colour rules with the brand heat ramp. Swap these three blocks:
+
+```css
+/* badge backgrounds (replace .prio.prio-urgent/high/medium) */
+.prio.prio-urgent { background: #4b1113; color: var(--blaze-red); }
+.prio.prio-high   { background: #4a2410; color: var(--blaze-orange); }
+.prio.prio-medium { background: #4a3a0c; color: var(--blaze-amber); }
+
+/* card left-border ramp (replace .card.prio-urgent/high/medium) */
+.card.prio-urgent { border-left-color: var(--blaze-red); }
+.card.prio-high   { border-left-color: var(--blaze-orange); }
+.card.prio-medium { border-left-color: var(--blaze-amber); }
+
+/* list-row left-border ramp (replace .row.prio-urgent/high/medium) */
+.row.prio-urgent  { border-left-color: var(--blaze-red); }
+.row.prio-high    { border-left-color: var(--blaze-orange); }
+.row.prio-medium  { border-left-color: var(--blaze-amber); }
+```
+
+Set the active view-toggle pill and the "live" indicator to the Blaze Orange accent
+(replace `.viewtoggle .pill.on`'s background):
+
+```css
+.viewtoggle .pill.on { color: var(--charcoal); background: var(--blaze-orange); }
+#live { color: var(--blaze-orange); }
+```
 
 - [ ] **Step 4: Manual verification**
 

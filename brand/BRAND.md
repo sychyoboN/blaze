@@ -62,12 +62,13 @@ Fast · Focused · Intelligent · Clear.
 ## How the brand maps into Blaze
 
 **Web app (`serve.mjs` inline CSS tokens):**
-- Page background = Light Neutral `#F6F7F9`; primary text + column headers = Deep
-  Charcoal `#0F172A`.
-- Primary accent / active controls / the "● live" indicator = Blaze Orange `#FF7A00`,
+- The board is a dark UI — it uses the brand's **dark surface**: background = Deep
+  Charcoal `#0F172A`, primary text = Light Neutral `#F6F7F9`. (A future light mode can
+  invert to Light Neutral bg / Deep Charcoal text — the tokens already exist.)
+- Primary accent / active controls / the "live" indicator = Blaze Orange `#FF7A00`,
   pulsing toward Blaze Red `#FF3B1F`.
-- Header = the icon-only mark + "Blaze" wordmark + the tagline as a subtitle. A dark
-  variant (Deep Charcoal bg, light wordmark) is available for a future dark mode.
+- Header = the icon-only mark + "Blaze" wordmark + the tagline as a subtitle (the
+  dark-background lockup from `brand-sheet.png` drops straight in).
 
 **Priority heat ramp (kanban cards are colour-coded by priority):**
 | Priority | Colour |

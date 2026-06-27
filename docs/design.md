@@ -291,9 +291,10 @@ to the product. Full token reference in `brand/BRAND.md`.
 
 - **Palette** (CSS tokens in `serve.mjs`): Blaze Red `#FF3B1F`, Blaze Orange `#FF7A00`,
   Blaze Amber `#FFC107`, Deep Charcoal `#0F172A`, Light Neutral `#F6F7F9`.
-- **Web app:** Light Neutral background, Deep Charcoal text, Blaze Orange accents and a
-  Red↕Amber "live" pulse on the activity feed; header carries the icon-only mark +
-  wordmark + tagline. Dark-background lockup is on hand for a future dark mode.
+- **Web app:** dark brand surface (Deep Charcoal background, Light Neutral text — the
+  board is a dark UI), Blaze Orange accents and a Red↕Amber "live" pulse on the activity
+  feed; header carries the icon-only mark + wordmark + tagline. (Tokens already support
+  a light-mode inversion later.)
 - **Priority heat ramp:** the warm palette *is* the kanban priority colour-coding —
   urgent = Red, high = Orange, medium = Amber, low/none = charcoal tints. No extra
   colours.
