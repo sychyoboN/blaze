@@ -4,6 +4,7 @@
 *~
 .vscode/
 .idea/
+*:Zone.Identifier
 
 # Node
 node_modules/
