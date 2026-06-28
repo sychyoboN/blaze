@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildForest } from "../scripts/map-view.mjs";
+import { buildForest, layoutTree, NODE_H, ROW_H, PAD } from "../scripts/map-view.mjs";
 
 const tk = (id, parent = "") => ({ id, parent, status: "todo", updated: "2026-06-28" });
 
@@ -23,4 +23,36 @@ test("buildForest: epic with two children", () => {
 test("buildForest: unresolvable or self parent becomes a root", () => {
   const f = buildForest([tk("A", "GHOST"), tk("B", "B")]);
   assert.deepEqual(f.roots.map((t) => t.id).sort(), ["A", "B"]);
+});
+
+test("layoutTree: single orphan sits at the origin pad", () => {
+  const l = layoutTree(buildForest([tk("A")]));
+  assert.equal(l.nodes.length, 1);
+  assert.equal(l.nodes[0].x, PAD);
+  assert.equal(l.nodes[0].y, PAD);
+  assert.equal(l.standaloneY, PAD); // A is an orphan -> standalone lane
+});
+
+test("layoutTree: parent centers on its two children", () => {
+  const l = layoutTree(buildForest([tk("E"), tk("C1", "E"), tk("C2", "E")]));
+  const by = Object.fromEntries(l.nodes.map((n) => [n.ticket.id, n]));
+  assert.equal(by.C1.depth, 1);
+  assert.equal(by.E.depth, 0);
+  assert.equal(by.E.y, (by.C1.y + by.C2.y) / 2);
+  assert.deepEqual(l.edges, [{ from: "E", to: "C1" }, { from: "E", to: "C2" }]);
+  assert.equal(l.standaloneY, null); // no orphans
+});
+
+test("layoutTree: a second tree never overlaps the first", () => {
+  const l = layoutTree(
+    buildForest([tk("E1"), tk("a", "E1"), tk("E2"), tk("b", "E2")]),
+  );
+  const by = Object.fromEntries(l.nodes.map((n) => [n.ticket.id, n]));
+  assert.ok(by.E2.y > by.a.y, "second epic starts below first epic's child");
+});
+
+test("layoutTree: a parent cycle still places every node once", () => {
+  const l = layoutTree(buildForest([tk("A", "B"), tk("B", "A")]));
+  assert.equal(l.nodes.length, 2);
+  assert.deepEqual(l.nodes.map((n) => n.ticket.id).sort(), ["A", "B"]);
 });
