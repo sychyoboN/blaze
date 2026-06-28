@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildForest, layoutTree, NODE_H, ROW_H, PAD } from "../scripts/map-view.mjs";
+import { buildForest, layoutTree, NODE_H, ROW_H, PAD, ticketMatches } from "../scripts/map-view.mjs";
 
 const tk = (id, parent = "") => ({ id, parent, status: "todo", updated: "2026-06-28" });
 
@@ -63,4 +63,26 @@ test("layoutTree: a parent cycle still places every node once", () => {
   const l = layoutTree(buildForest([tk("A", "B"), tk("B", "A")]));
   assert.equal(l.nodes.length, 2);
   assert.deepEqual(l.nodes.map((n) => n.ticket.id).sort(), ["A", "B"]);
+});
+
+const NOW = Date.parse("2026-06-28T00:00:00Z");
+const at = (date, status = "todo") => ({ id: "x", parent: "", status, updated: date });
+
+test("ticketMatches: window keeps recent, drops old, boundary inclusive", () => {
+  assert.equal(ticketMatches(at("2026-06-28"), { window: 7, status: "all", now: NOW }), true);
+  assert.equal(ticketMatches(at("2026-06-21"), { window: 7, status: "all", now: NOW }), true); // exactly 7d
+  assert.equal(ticketMatches(at("2026-06-20"), { window: 7, status: "all", now: NOW }), false); // 8d
+  assert.equal(ticketMatches(at("2020-01-01"), { window: null, status: "all", now: NOW }), true); // all
+});
+
+test("ticketMatches: status sets", () => {
+  assert.equal(ticketMatches(at("2026-06-28", "in-progress"), { window: null, status: "active", now: NOW }), true);
+  assert.equal(ticketMatches(at("2026-06-28", "backlog"), { window: null, status: "active", now: NOW }), false);
+  assert.equal(ticketMatches(at("2026-06-28", "in-review"), { window: null, status: "inactive", now: NOW }), true);
+  assert.equal(ticketMatches(at("2026-06-28", "todo"), { window: null, status: "inactive", now: NOW }), false);
+});
+
+test("ticketMatches: filters AND together", () => {
+  // active but stale -> excluded by window
+  assert.equal(ticketMatches(at("2020-01-01", "in-progress"), { window: 7, status: "active", now: NOW }), false);
 });

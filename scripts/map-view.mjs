@@ -14,6 +14,21 @@ export const PAD = 24;
 
 const ACTIVE = new Set(["todo", "in-progress"]);
 
+// ---- pure: filtering ----------------------------------------------------
+
+export function ticketMatches(t, { window, status, now }) {
+  let windowOk = true;
+  if (window != null) {
+    const ms = Date.parse(t.updated);
+    if (Number.isNaN(ms)) windowOk = false;
+    else windowOk = (now - ms) / 86400000 <= window;
+  }
+  let statusOk = true;
+  if (status === "active") statusOk = ACTIVE.has(t.status);
+  else if (status === "inactive") statusOk = !ACTIVE.has(t.status);
+  return windowOk && statusOk;
+}
+
 // ---- pure: forest construction -----------------------------------------
 
 export function buildForest(tickets) {
