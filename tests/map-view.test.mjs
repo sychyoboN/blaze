@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import * as mapView from "../scripts/map-view.mjs";
 import { buildForest, layoutTree, NODE_H, ROW_H, PAD, ticketMatches, computeVisible } from "../scripts/map-view.mjs";
 
 const tk = (id, parent = "") => ({ id, parent, status: "todo", updated: "2026-06-28" });
@@ -111,4 +112,10 @@ test("computeVisible: whole ancestor chain is context", () => {
 test("computeVisible: empty match is empty", () => {
   const { visibleIds } = computeVisible(tree, new Set());
   assert.equal(visibleIds.size, 0);
+});
+
+test("module exports initMap and MAP_STYLES without touching the DOM", () => {
+  assert.equal(typeof mapView.initMap, "function");
+  assert.equal(typeof mapView.MAP_STYLES, "string");
+  assert.ok(mapView.MAP_STYLES.includes(".map-node"));
 });
