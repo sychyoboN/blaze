@@ -30,7 +30,15 @@ test("layoutTree: single orphan sits at the origin pad", () => {
   assert.equal(l.nodes.length, 1);
   assert.equal(l.nodes[0].x, PAD);
   assert.equal(l.nodes[0].y, PAD);
-  assert.equal(l.standaloneY, PAD); // A is an orphan -> standalone lane
+  assert.equal(l.standaloneY, null); // no epics -> no separator needed
+});
+
+test("layoutTree: standalone divider sits below epics and above orphans", () => {
+  const l = layoutTree(buildForest([tk("E"), tk("c", "E"), tk("O")]));
+  const by = Object.fromEntries(l.nodes.map((n) => [n.ticket.id, n]));
+  assert.ok(l.standaloneY != null);
+  assert.ok(l.standaloneY > by.E.y, "divider below the epic tree");
+  assert.ok(by.O.y > l.standaloneY, "orphan below the divider");
 });
 
 test("layoutTree: parent centers on its two children", () => {

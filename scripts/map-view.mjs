@@ -94,9 +94,10 @@ export function layoutTree(forest) {
   let standaloneY = null;
   if (orphans.length) {
     if (epics.length > 0) {
-      cursor += 1; // gap row between epics and orphans
+      cursor += 1; // gap row after the epic trees
+      standaloneY = PAD + cursor * ROW_H; // the "Standalone" divider row
+      cursor += 1; // orphans sit below the divider
     }
-    standaloneY = PAD + cursor * ROW_H;
     for (const r of orphans) place(r, 0, true);
   }
 
