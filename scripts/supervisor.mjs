@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig, ROOT } from "./config.mjs";
-import { pageHtml, contentHash } from "./serve.mjs";
+import { pageHtml, contentHash, tryServeAsset } from "./serve.mjs";
 import { createBus } from "./event-bus.mjs";
 import { reconcile } from "./reconcile.mjs";
 import { groomOnce } from "./loops/groomer.mjs";
@@ -127,6 +127,7 @@ export function createApp(cfg, { root = ROOT } = {}) {
   }
 
   const server = createServer((req, res) => {
+    if (tryServeAsset(req, res)) return;
     if (req.url === "/api/hash") {
       res.writeHead(200, { "content-type": "text/plain" });
       res.end(contentHash());
