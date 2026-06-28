@@ -73,6 +73,8 @@ test("ticketMatches: window keeps recent, drops old, boundary inclusive", () => 
   assert.equal(ticketMatches(at("2026-06-21"), { window: 7, status: "all", now: NOW }), true); // exactly 7d
   assert.equal(ticketMatches(at("2026-06-20"), { window: 7, status: "all", now: NOW }), false); // 8d
   assert.equal(ticketMatches(at("2020-01-01"), { window: null, status: "all", now: NOW }), true); // all
+  assert.equal(ticketMatches(at("not-a-date"), { window: 7, status: "all", now: NOW }), false); // unparseable + window -> excluded
+  assert.equal(ticketMatches(at("not-a-date"), { window: null, status: "all", now: NOW }), true); // null window skips parse
 });
 
 test("ticketMatches: status sets", () => {
